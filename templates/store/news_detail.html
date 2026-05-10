@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb bg-transparent p-0">
+      <li class="breadcrumb-item"><a href="{% url 'store:home' %}">Главная</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'store:news_list' %}">Новости</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ news.title|truncatechars:50 }}</li>
+    </ol>
+  </nav>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <small class="text-muted"><i class="fas fa-calendar-alt mr-1"></i> {{ news.created_at|date:"d.m.Y H:i" }}</small>
+          <small class="text-primary"><i class="fas fa-eye mr-1"></i> {{ news.views }} просмотров</small>
+        </div>
+        <h1 class="h2 mb-3">{{ news.title }}</h1>
+        <div class="mb-4"><i class="fas fa-user text-primary"></i> <small class="ml-2">{{ news.author.first_name }} {{ news.author.last_name }}</small></div>
+      </div>
+
+      {% if news.image %}
+      <div class="mb-4"><img src="{{ news.image.url }}" alt="{{ news.title }}" class="img-fluid rounded shadow-sm"></div>
+      {% endif %}
+
+      <div class="news-content mb-5">{{ news.content|linebreaks }}</div>
+
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0">
+          <h5 class="mb-0"><i class="fas fa-comments text-primary mr-2"></i> Комментарии ({{ comments.count }})</h5>
+        </div>
+        <div class="card-body">
+          {% if user.is_authenticated %}
+            <form method="post" class="mb-4">
+              {% csrf_token %}
+              <div class="form-group">{{ comment_form.content }}</div>
+              <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane mr-2"></i>Отправить комментарий</button>
+            </form>
+          {% else %}
+            <div class="alert alert-info mb-4">Чтобы оставить комментарий, <a href="{% url 'store:login' %}">войдите</a> или <a href="{% url 'store:register' %}">зарегистрируйтесь</a>.</div>
+          {% endif %}
+
+          {% if comments %}
+            <div class="comments-list">
+              {% for comment in comments %}
+                <div class="media mb-4 {% if not forloop.first %}pt-4 border-top{% endif %}" id="comment-{{ comment.id }}">
+                  <div class="mr-3">
+                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                      <i class="fas fa-user text-muted"></i>
+                    </div>
+                  </div>
+                  <div class="media-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <div>
+                        <h6 class="mb-0">{{ comment.user.first_name }} {{ comment.user.last_name }}</h6>
+                        <small class="text-muted">
+                          <i class="far fa-clock"></i> {{ comment.created_at|date:"d.m.Y H:i" }}
+                          {% if comment.is_edited %}
+                            <span class="badge badge-light edited-badge ml-2">
+                              <i class="fas fa-pencil-alt"></i> изменено {{ comment.updated_at|date:"d.m.Y H:i" }}
+                            </span>
+                          {% endif %}
+                        </small>
+                      </div>
+                      {% if user == comment.user or user.is_staff %}
+                      <div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary edit-comment-btn" data-comment-id="{{ comment.id }}">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger delete-comment-btn" data-comment-id="{{ comment.id }}" data-toggle="modal" data-target="#deleteCommentModal">
+                          <i class="fas fa-trash-alt"></i>
+                        </button>
+                      </div>
+                      {% endif %}
+                    </div>
+
+                    <div class="sentiment-badge">
+                      {% if comment.sentiment_analyzed %}
+                        <div class="mb-2">
+                          {% if comment.sentiment_label == 'POSITIVE' %}
+                            <span class="badge bg-success text-white px-3 py-1"><i class="fas fa-smile-wink"></i> Положительный комментарий</span>
+                          {% elif comment.sentiment_label == 'NEGATIVE' %}
+                            <span class="badge bg-danger text-white px-3 py-1"><i class="fas fa-frown"></i> Негативный комментарий</span>
+                          {% else %}
+                            <span class="badge bg-secondary text-white px-3 py-1"><i class="fas fa-meh"></i> Нейтральный комментарий</span>
+                          {% endif %}
+                        </div>
+                      {% endif %}
+                    </div>
+
+                    <p class="mb-0 comment-text">{{ comment.content|linebreaksbr }}</p>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center py-4">
+              <i class="fas fa-comment-slash fa-2x text-muted mb-3"></i>
+              <p class="text-muted">Комментариев пока нет. Будьте первым!</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      {% if recent_news %}
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0">
+          <h5 class="mb-0 text-uppercase"><i class="fas fa-history text-primary mr-2"></i>Последние новости</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush">
+            {% for item in recent_news %}
+              <a href="{% url 'store:news_detail' item.slug %}" class="list-group-item list-group-item-action border-0 py-3">
+                <div class="d-flex align-items-center">
+                  {% if item.image %}
+                    <div class="mr-3"><img src="{{ item.image.url }}" alt="{{ item.title }}" width="60" height="60" style="object-fit: cover;"></div>
+                  {% endif %}
+                  <div>
+                    <h6 class="mb-1">{{ item.title|truncatechars:60 }}</h6>
+                    <small class="text-muted">{{ item.created_at|date:"d.m.Y" }}</small>
+                  </div>
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0">
+          <h5 class="mb-0 text-uppercase"><i class="fas fa-info-circle text-primary mr-2"></i>Информация</h5>
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled mb-0">
+            <li class="mb-2"><i class="fas fa-user text-primary mr-2"></i><strong>Автор:</strong> {{ news.author.first_name }} {{ news.author.last_name }}</li>
+            <li class="mb-2"><i class="fas fa-calendar-alt text-primary mr-2"></i><strong>Дата публикации:</strong> {{ news.created_at|date:"d.m.Y" }}</li>
+            <li class="mb-2"><i class="fas fa-eye text-primary mr-2"></i><strong>Просмотры:</strong> {{ news.views }}</li>
+            <li><i class="fas fa-edit text-primary mr-2"></i><strong>Обновлено:</strong> {{ news.updated_at|date:"d.m.Y" }}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="deleteCommentModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header"><h5>Подтверждение удаления</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+      <div class="modal-body">Вы уверены, что хотите удалить этот комментарий?</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-dark" data-dismiss="modal">Отмена</button>
+        <a href="#" id="confirmDeleteCommentBtn" class="btn btn-primary">Удалить</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="editCommentModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <form id="edit-comment-form">
+        {% csrf_token %}
+        <div class="modal-header"><h5>Редактирование комментария</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+        <div class="modal-body">
+          <div class="form-group"><textarea id="edit-comment-content" class="form-control" rows="4" required></textarea></div>
+          <div id="edit-comment-error" class="alert alert-danger d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+          <button type="submit" class="btn btn-primary">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+  $('.delete-comment-btn').click(function() {
+    var commentId = $(this).data('comment-id');
+    $('#confirmDeleteCommentBtn').attr('href', "{% url 'store:delete_comment' 0 %}".replace('0', commentId));
+  });
+
+  var currentCommentId = null;
+  $('.edit-comment-btn').click(function() {
+    currentCommentId = $(this).data('comment-id');
+    var currentText = $(this).closest('.media').find('.comment-text').text().trim();
+    $('#edit-comment-content').val(currentText);
+    $('#edit-comment-error').addClass('d-none');
+    $('#editCommentModal').modal('show');
+  });
+
+  $('#edit-comment-form').submit(function(e) {
+    e.preventDefault();
+    var $submitBtn = $(this).find('button[type="submit"]');
+    $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Сохранение...');
+    
+    $.ajax({
+      url: "{% url 'store:edit_comment' 0 %}".replace('0', currentCommentId),
+      type: "POST",
+      data: {
+        'content': $('#edit-comment-content').val(),
+        'csrfmiddlewaretoken': '{{ csrf_token }}'
+      },
+      success: function(data) {
+        if (data.status === 'ok') {
+          var $commentDiv = $('.edit-comment-btn[data-comment-id="' + currentCommentId + '"]').closest('.media');
+          
+          $commentDiv.find('.comment-text').text(data.content);
+          
+          var $editedSpan = $commentDiv.find('.edited-badge');
+          if ($editedSpan.length) {
+            $editedSpan.html('<i class="fas fa-pencil-alt"></i> изменено ' + data.updated_at);
+          } else {
+            $commentDiv.find('.text-muted small').append(' <span class="badge badge-light edited-badge"><i class="fas fa-pencil-alt"></i> изменено ' + data.updated_at + '</span>');
+          }
+          
+          var $sentimentContainer = $commentDiv.find('.sentiment-badge');
+          
+          if (data.sentiment_analyzed === true && data.sentiment_label) {
+            var sentimentText = '';
+            var sentimentClass = '';
+            var sentimentIcon = '';
+            
+            if (data.sentiment_label === 'POSITIVE') {
+              sentimentText = 'Положительный комментарий';
+              sentimentClass = 'bg-success';
+              sentimentIcon = 'fa-smile-wink';
+            } else if (data.sentiment_label === 'NEGATIVE') {
+              sentimentText = 'Негативный комментарий';
+              sentimentClass = 'bg-danger';
+              sentimentIcon = 'fa-frown';
+            } else {
+              sentimentText = 'Нейтральный комментарий';
+              sentimentClass = 'bg-secondary';
+              sentimentIcon = 'fa-meh';
+            }
+            
+            var sentimentHtml = '<div class="mb-2"><span class="badge ' + sentimentClass + ' text-white px-3 py-1"><i class="fas ' + sentimentIcon + '"></i> ' + sentimentText + '</span></div>';
+            
+            if ($sentimentContainer.length) {
+              $sentimentContainer.html(sentimentHtml);
+            } else {
+              $commentDiv.find('.text-muted small').after('<div class="sentiment-badge">' + sentimentHtml + '</div>');
+            }
+          } else {
+            if ($sentimentContainer.length) {
+              $sentimentContainer.html('');
+            }
+          }
+          
+          $('#editCommentModal').modal('hide');
+          
+          var $alert = $('<div class="alert alert-success alert-dismissible fade show" role="alert">Комментарий успешно обновлён<button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+          $('.container.py-5').prepend($alert);
+          setTimeout(function() { $alert.alert('close'); }, 3000);
+          
+        } else {
+          $('#edit-comment-error').text(data.message || 'Ошибка').removeClass('d-none');
+        }
+      },
+      error: function(xhr) {
+        $('#edit-comment-error').text('Ошибка сервера. Попробуйте позже.').removeClass('d-none');
+      },
+      complete: function() {
+        $submitBtn.prop('disabled', false).html('Сохранить');
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="container py-5 bg-light">
+    <div class="row px-4 px-lg-5 py-lg-4 align-items-center">
+      <div class="col-lg-6">
+        <h1 class="h2 text-uppercase mb-0">Избранное</h1>
+      </div>
+      <div class="col-lg-6 text-lg-right">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-lg-end mb-0 px-0">
+            <li class="breadcrumb-item"><a href="{% url 'store:home' %}">Главная</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Избранное</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+</section>
+
+<div class="container py-5">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if wishlist_items %}
+        <div class="row">
+            {% for item in wishlist_items %}
+            <div class="col-md-4 col-sm-6 mb-4">
+                <div class="card h-100">
+                    <img src="{% if item.product.product_image %}{{ item.product.product_image.url }}{% else %}{% static 'img/product-1.jpg' %}{% endif %}" 
+                         class="card-img-top" alt="{{ item.product.title }}" 
+                         style="height: 200px; object-fit: cover;">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ item.product.title }}</h5>
+                        <p class="card-text">{{ item.product.price }} ₽</p>
+                        <a href="{% url 'store:product-detail' item.product.slug %}" class="btn btn-dark btn-sm">Подробнее</a>
+                        
+                        <form method="post" action="{% url 'store:remove_from_wishlist' item.product.id %}" 
+                              style="display: inline-block;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-sm">Удалить</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="far fa-heart fa-3x mb-3"></i>
+            <h3 class="mb-3">Ваша список избранного пуст</h3>
+            <a href="{% url 'store:home' %}"><i class="fas fa-long-arrow-alt-left mr-2"> </i>Продолжить покупки</a>
+          </div>
+    {% endif %}
+</div>
+
+{% endblock content %}

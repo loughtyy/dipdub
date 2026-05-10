@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row px-4 px-lg-5 py-lg-4 align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="h2 text-uppercase mb-0">{{ category.title }}</h1>
+                </div>
+                <div class="col-lg-6 text-lg-right">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb justify-content-lg-end mb-0 px-0">
+                            <li class="breadcrumb-item"><a href="{% url 'store:home' %}">Главная</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'store:all-categories' %}">Категории</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">{{ category.title }}</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5">
+        <div class="container p-0">
+            <div class="row">
+                <div class="col-lg-3 order-2 order-lg-1">
+                    <h5 class="text-uppercase mb-4">Категории</h5>
+                    {% if categories %}
+                        {% for cat in categories %}
+                            <a href="{% url 'store:category-products' cat.slug %}" class="text-decoration-none">
+                                <div class="py-2 px-4 {% if category == cat %}bg-dark text-white{% else %}bg-light{% endif %} mb-3">
+                                    <strong class="small text-uppercase font-weight-bold">{{ cat.title }}</strong>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    {% endif %}
+
+                    <h6 class="text-uppercase mb-3">Фильтры</h6>
+                    <div class="custom-control custom-checkbox mb-1">
+                        <input class="custom-control-input" id="filter-stock" type="checkbox">
+                        <label class="custom-control-label text-small" for="filter-stock">В наличии</label>
+                    </div>
+                    <div class="custom-control custom-checkbox mb-1">
+                        <input class="custom-control-input" id="filter-featured" type="checkbox">
+                        <label class="custom-control-label text-small" for="filter-featured">Хиты продаж</label>
+                    </div>
+                    <div class="custom-control custom-checkbox mb-3">
+                        <input class="custom-control-input" id="filter-new" type="checkbox">
+                        <label class="custom-control-label text-small" for="filter-new">Новинки</label>
+                    </div>
+                    <div id="filter-message" class="alert alert-info d-none py-2 small">
+                        <i class="fas fa-check-circle"></i> Отфильтровано: <span id="filtered-count">0</span> товаров
+                        <button type="button" class="close" id="reset-filters" style="font-size: 1rem;">×</button>
+                    </div>
+
+                    <h6 class="text-uppercase mb-3 mt-4">Сортировка</h6>
+                    <div class="mb-3">
+                        <a href="?sort=price_asc" class="d-block py-1 text-muted {% if request.GET.sort == 'price_asc' %}text-primary font-weight-bold{% endif %}">
+                            <i class="fas fa-arrow-up mr-2"></i>Сначала дешевле
+                        </a>
+                        <a href="?sort=price_desc" class="d-block py-1 text-muted {% if request.GET.sort == 'price_desc' %}text-primary font-weight-bold{% endif %}">
+                            <i class="fas fa-arrow-down mr-2"></i>Сначала дороже
+                        </a>
+                        <a href="?sort=newest" class="d-block py-1 text-muted {% if request.GET.sort == 'newest' %}text-primary font-weight-bold{% endif %}">
+                            <i class="fas fa-calendar-plus mr-2"></i>Сначала новинки
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-lg-9 order-1 order-lg-2 mb-5 mb-lg-0">
+                    <div class="row mb-3 align-items-center">
+                        <div class="col-lg-6 mb-2 mb-lg-0">
+                            <p class="text-small text-muted mb-0">
+                                Показано {{ products.start_index }}–{{ products.end_index }} из {{ products.paginator.count }} результатов
+                            </p>
+                        </div>
+                        <div class="col-lg-6">
+                            <ul class="list-inline d-flex align-items-center justify-content-lg-end mb-0">
+                                <li class="list-inline-item text-muted mr-3">
+                                    <a class="reset-anchor p-0" href="#"><i class="fas fa-th-large"></i></a>
+                                </li>
+                                <li class="list-inline-item text-muted mr-3">
+                                    <a class="reset-anchor p-0" href="#"><i class="fas fa-th"></i></a>
+                                </li>
+                                <li class="list-inline-item">
+                                    <select class="selectpicker ml-auto" name="sorting" data-width="200" data-style="bs-select-form-control" data-title="Сортировка">
+                                        <option value="default">По умолчанию</option>
+                                        <option value="price_asc">Цена: по возрастанию</option>
+                                        <option value="price_desc">Цена: по убыванию</option>
+                                        <option value="newest">Сначала новинки</option>
+                                    </select>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="row" id="products-container">
+                        {% if products %}
+                            {% for product in products %}
+                                <div class="col-lg-4 col-sm-6 mb-4 product-item"
+                                     data-stock="{% if product.stock > 0 %}1{% else %}0{% endif %}"
+                                     data-featured="{% if product.is_featured %}1{% else %}0{% endif %}"
+                                     data-created="{{ product.created_at|date:'Y-m-d' }}">
+                                    <div class="product text-center h-100">
+                                        <div class="mb-3 position-relative">
+                                            <a class="d-block" href="{% url 'store:product-detail' product.slug %}">
+                                                {% if product.product_image %}
+                                                    <img class="img-fluid w-100" src="{{ product.product_image.url }}" alt="{{ product.title }}" style="height: 250px; object-fit: cover;">
+                                                {% else %}
+                                                    <img class="img-fluid w-100" src="{% static 'img/product-1.jpg' %}" alt="{{ product.title }}" style="height: 250px; object-fit: cover;">
+                                                {% endif %}
+                                            </a>
+                                            <div class="product-overlay">
+                                                <ul class="mb-0 list-inline">
+                                                    <li class="list-inline-item m-0 p-0">
+                                                        <button class="btn btn-sm btn-outline-dark wishlist-toggle" data-product-id="{{ product.id }}">
+                                                            <i class="{% if product.id in user_wishlist_ids %}fas fa-heart{% else %}far fa-heart{% endif %}"></i>
+                                                        </button>
+                                                    </li>
+                                                    <li class="list-inline-item m-0 p-0">
+                                                        <form action="{% url 'store:add-to-cart' %}">
+                                                            <input type="hidden" name="prod_id" value="{{ product.id }}">
+                                                            <button type="submit" class="btn btn-sm btn-dark">Добавить в корзину</button>
+                                                        </form>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <h6 class="mb-2">
+                                            <a class="reset-anchor text-dark" href="{% url 'store:product-detail' product.slug %}">
+                                                {{ product.title }}
+                                            </a>
+                                        </h6>
+                                        <p class="small font-weight-bold text-primary mb-0">{{ product.price }} ₽</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="col-12 text-center py-5">
+                                <i class="fas fa-gem fa-3x text-muted mb-3"></i>
+                                <h4 class="text-muted">Товары не найдены</h4>
+                                <p class="text-muted">В этой категории пока нет доступных товаров</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {% if products.paginator.num_pages > 1 %}
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center justify-content-lg-end">
+                                {% if products.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ products.previous_page_number }}" aria-label="Previous">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link" aria-label="Previous">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </span>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in products.paginator.page_range %}
+                                    {% if products.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if products.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ products.next_page_number }}" aria-label="Next">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link" aria-label="Next">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </span>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                            <div class="text-center mt-3">
+                                <p class="text-muted small">
+                                    Страница {{ products.number }} из {{ products.paginator.num_pages }}
+                                </p>
+                            </div>
+                        </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterStock = document.getElementById('filter-stock');
+        const filterFeatured = document.getElementById('filter-featured');
+        const filterNew = document.getElementById('filter-new');
+        const resetBtn = document.getElementById('reset-filters');
+        const filterMessage = document.getElementById('filter-message');
+        const filteredCountSpan = document.getElementById('filtered-count');
+        const productItems = document.querySelectorAll('.product-item');
+        const totalItems = productItems.length;
+
+        function isNewProduct(createdDate) {
+            const created = new Date(createdDate);
+            const now = new Date();
+            const diffDays = (now - created) / (1000 * 60 * 60 * 24);
+            return diffDays <= 30;
+        }
+
+        function filterProducts() {
+            let visibleCount = 0;
+            const stockChecked = filterStock.checked;
+            const featuredChecked = filterFeatured.checked;
+            const newChecked = filterNew.checked;
+
+            const noFilter = !stockChecked && !featuredChecked && !newChecked;
+
+            productItems.forEach(item => {
+                let show = true;
+                if (!noFilter) {
+                    const inStock = item.getAttribute('data-stock') === '1';
+                    const isFeatured = item.getAttribute('data-featured') === '1';
+                    const createdDate = item.getAttribute('data-created');
+                    const isNew = createdDate ? isNewProduct(createdDate) : false;
+
+                    if (stockChecked && !inStock) show = false;
+                    if (featuredChecked && !isFeatured) show = false;
+                    if (newChecked && !isNew) show = false;
+                }
+
+                if (show) {
+                    item.style.display = '';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            if (!noFilter) {
+                filteredCountSpan.textContent = visibleCount;
+                filterMessage.classList.remove('d-none');
+            } else {
+                filterMessage.classList.add('d-none');
+            }
+        }
+
+        function resetFilters() {
+            filterStock.checked = false;
+            filterFeatured.checked = false;
+            filterNew.checked = false;
+            filterProducts();
+        }
+
+        filterStock.addEventListener('change', filterProducts);
+        filterFeatured.addEventListener('change', filterProducts);
+        filterNew.addEventListener('change', filterProducts);
+        if (resetBtn) resetBtn.addEventListener('click', resetFilters);
+
+        const sortSelect = document.querySelector('select[name="sorting"]');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', function() {
+                const value = this.value;
+                if (value !== 'default') {
+                    window.location.href = `?sort=${value}`;
+                } else {
+                    window.location.href = window.location.pathname;
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

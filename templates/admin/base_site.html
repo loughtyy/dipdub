@@ -1,0 +1,11 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | Ювелирный магазин – Админ-панель{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        Ювелирный магазин – Административная панель
+    </a>
+</h1>
+{% endblock %}

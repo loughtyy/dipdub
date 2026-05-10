@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+
+      {% block content %}
+
+      <div class="container">
+        <section class="hero pb-3 bg-cover bg-center d-flex align-items-center" style="background: url({% static 'img/hero-jewlrey-banner.jpg' %})">
+          <div class="container py-5">
+            <div class="row px-4 px-lg-5">
+              <div class="col-lg-6">
+                <p class="text-muted small text-uppercase mb-2">Новинки 2026</p>
+                <h1 class="h2 text-uppercase mb-3">До 30% скидки на все товары</h1><a class="btn btn-dark" href="{% url 'store:all-categories' %}">Посмотреть коллекции</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <section class="pt-5">
+          <header class="text-center">
+            <p class="small text-muted small text-uppercase mb-1">Тщательно отборные коллекции</p>
+            <h2 class="h5 text-uppercase mb-4">Посмотреть наши категории</h2>
+          </header>
+          <div class="row">
+          {% if categories %}
+            {% for category in categories %}
+
+              <div class="col-md-4 mb-4 mb-md-0">
+                <a class="category-item" href="{% url 'store:category-products' category.slug %}">
+                  {% if category.category_image %}
+                    <img class="img-fluid" src="{{ category.category_image.url }}" alt="{{ category.title }}">
+                    {% else %}
+                    <img class="img-fluid" src="{% static 'img/cat-img-1.jpg' %}" alt="{{ category.title }}">
+                  {% endif %}
+                  <strong class="category-item-title">{{ category.title }}</strong>
+                </a>
+              </div>
+            
+            {% endfor %}
+          {% endif %}
+          </div>
+        </section>
+
+
+        <section class="py-5">
+          <header>
+            <p class="small text-muted small text-uppercase mb-1">Сделано с любовью</p>
+            <h2 class="h5 text-uppercase mb-4">Список популярных товаров</h2>
+          </header>
+          <div class="row">
+
+            {% if products %}
+              {% for product in products %}
+              
+                <div class="col-xl-3 col-lg-4 col-sm-6">
+                  <div class="product text-center">
+                    <div class="position-relative mb-3">
+
+                      <div class="badge text-white badge-"></div>
+                      
+                      <a class="d-block" href="{% url 'store:product-detail' product.slug %}">
+                        {% if product.product_image %}
+                          <img class="img-fluid w-100" src="{{ product.product_image.url }}" alt="{{product.title}}">
+                        {% else %}
+                          <img class="img-fluid w-100" src="{% static 'img/product-1.jpg' %}" alt="{{product.title}}">
+                        {% endif %}
+                      </a>
+
+                      <div class="product-overlay">
+                        <ul class="mb-0 list-inline">
+                          <li class="list-inline-item m-0 p-0">
+                            <button class="btn btn-sm btn-outline-dark wishlist-toggle" data-product-id="{{ product.id }}">
+                                <i class="{% if product.id in user_wishlist_ids %}fas fa-heart{% else %}far fa-heart{% endif %}"></i>
+                            </button>
+                          </li>
+                          <li class="list-inline-item m-0 p-0">
+                            {% comment %} <a class="btn btn-sm btn-dark" href="{% url 'store:add-to-cart' %}">Добавить в корзину</a> {% endcomment %}
+
+                            <form action="{% url 'store:add-to-cart' %}">
+                              <input type="hidden" name="prod_id" value="{{product.id}}" id="product_id">
+                              <button type="submit" class="btn btn-sm btn-dark">Добавить в корзину</button>
+                            </form>
+
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                    <h6> <a class="reset-anchor text-dark" href="{% url 'store:product-detail' product.slug %}">{{ product.title }}</a></h6>
+                    <p class="small font-weight-bold text-primary mb-5">{{product.price}} ₽</p>
+                  </div>
+                </div>
+
+              {% endfor %}
+            {% endif %}
+
+            
+
+          </div>
+        </section>
+
+
+        <section class="py-5 bg-light">
+        <div class="container">
+          <div class="row text-center">
+            <div class="col-lg-4 mb-4 mb-lg-0">
+              <div class="service-block">
+                <h3 class="h5 text-uppercase mb-2">Бесплатная доставка</h3>
+                <p class="text-muted mb-0">По всей России</p>
+              </div>
+            </div>
+            <div class="col-lg-4 mb-4 mb-lg-0">
+              <div class="service-block">
+                <h3 class="h5 text-uppercase mb-2">Обслуживание 24/7</h3>
+                <p class="text-muted mb-0">Без перевывов и выходных</p>
+              </div>
+            </div>
+            <div class="col-lg-4">
+              <div class="service-block">
+                <h3 class="h5 text-uppercase mb-2">Специальные предложения</h3>
+                <p class="text-muted mb-0">Индивидуальные заказы</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+        <section class="py-5">
+          <div class="container p-0">
+            <div class="row">
+              <div class="col-lg-6 mb-3 mb-lg-0">
+                <h5 class="text-uppercase">Узнайте все новости первыми</h5>
+              </div>
+              <div class="col-lg-6">
+                <form action="#">
+                  <div class="input-group flex-column flex-sm-row mb-3 ">
+                    <input class="form-control form-control-lg py-3" type="email" placeholder="Введите адрес электронной почты" aria-describedby="button-addon2">
+                    <div class="input-group-append">
+                      <button class="btn btn-dark btn-block" id="button-addon2" type="submit">Подписаться</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {% endblock content %}

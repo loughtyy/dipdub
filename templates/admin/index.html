@@ -1,0 +1,228 @@
+{# templates/admin/index.html #}
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+        }
+        .card-header-custom {
+            background-color: #8B0000 !important;
+            color: white !important;
+            font-weight: bold;
+            border-bottom: none;
+        }
+        .table-dark th, .table-dark td {
+            border-color: #2c2c2c;
+        }
+        .list-group-item.bg-dark {
+            border-color: #2c2c2c;
+        }
+        .btn-outline-light {
+            border-color: #6c757d;
+        }
+        .btn-outline-light:hover {
+
+            border-color: #8B0000;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    {% if stats %}
+    <h2 class="mb-4"><i class="fas fa-tachometer-alt me-2"></i>Панель управления</h2>
+    
+    <div class="stat-grid">
+        <div class="stats-card p-3">
+            <div class="stats-number">{{ stats.total_products }}</div>
+            <div class="stats-title">Товаров</div>
+            <small class="text-danger"><i class="fas fa-image"></i> без фото: {{ stats.products_no_image }}</small><br>
+            <small class="text-warning"><i class="fas fa-ban"></i> неактивных: {{ stats.inactive_products }}</small>
+        </div>
+        <div class="stats-card p-3">
+            <div class="stats-number">{{ stats.total_categories }}</div>
+            <div class="stats-title">Категорий</div>
+            <i class="fas fa-folder-open text-light"></i>
+        </div>
+        <div class="stats-card p-3">
+            <div class="stats-number">{{ stats.total_orders }}</div>
+            <div class="stats-title">Заказов</div>
+            <i class="fas fa-shopping-cart text-light"></i>
+        </div>
+        <div class="stats-card p-3">
+            <div class="stats-number">{{ stats.total_users }}</div>
+            <div class="stats-title">Пользователей</div>
+            <i class="fas fa-users text-light"></i>
+        </div>
+        <div class="stats-card p-3">
+            <div class="stats-number">{{ stats.total_news }}</div>
+            <div class="stats-title">Новостей</div>
+            <i class="fas fa-newspaper text-light"></i>
+        </div>
+    </div>
+    
+    <div class="row g-4 mt-2">
+        <div class="col-md-6">
+            <div class="card bg-dark text-light border-secondary h-100">
+                <div class="card-header card-header-custom">
+                    <i class="fas fa-boxes me-2"></i>Последние заказы
+                </div>
+                <div class="card-body p-0">
+                    {% if stats.recent_orders %}
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th><th>Пользователь</th><th>Товар</th><th>Статус</th><th>Дата</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in stats.recent_orders %}
+                                    <tr>
+                                        <td>{{ order.id }}</td>
+                                        <td>{{ order.user.username }}</td>
+                                        <td>{{ order.product.title|truncatechars:25 }}</td>
+                                        <td><span class="badge-status badge-{{ order.status }}">{{ order.status }}</span></td>
+                                        <td>{{ order.ordered_date|date:"d.m.Y H:i" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted p-3">Нет заказов</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-end">
+                    <a href="{% url 'admin:store_order_changelist' %}" class="btn btn-sm btn-outline-light">Все заказы <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card bg-dark text-light border-secondary h-100">
+                <div class="card-header card-header-custom">
+                    <i class="fas fa-chart-line me-2"></i>Популярные товары
+                </div>
+                <div class="card-body p-0">
+                    {% if stats.popular_products %}
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover mb-0">
+                                <thead>
+                                    <tr><th>Товар</th><th>Заказов</th><th>Цена</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for product in stats.popular_products %}
+                                    <tr>
+                                        <td><a href="{% url 'admin:store_product_change' product.id %}" class="text-light">{{ product.title|truncatechars:35 }}</a></td>
+                                        <td>{{ product.order_count }}</td>
+                                        <td>{{ product.price }} ₽</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted p-3">Нет данных</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-end">
+                    <a href="{% url 'admin:store_product_changelist' %}" class="btn btn-sm btn-outline-light">Управление товарами <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4 mt-2">
+        <div class="col-md-6">
+            <div class="card bg-dark text-light border-secondary">
+                <div class="card-header card-header-custom">
+                    <i class="fas fa-newspaper me-2"></i>Свежие новости
+                </div>
+                <div class="card-body p-0">
+                    {% if stats.recent_news %}
+                        <ul class="list-group list-group-flush bg-transparent">
+                            {% for news in stats.recent_news %}
+                                <li class="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <a href="{% url 'admin:store_news_change' news.id %}" class="text-light">{{ news.title }}</a>
+                                        <br><small class="text-muted">{{ news.created_at|date:"d.m.Y" }} | <i class="fas fa-eye"></i> {{ news.views }} просмотров</small>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-muted"></i>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted p-3">Новостей пока нет</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-end">
+                    <a href="{% url 'admin:store_news_changelist' %}" class="btn btn-sm btn-outline-light">Все новости <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card bg-dark text-light border-secondary">
+                <div class="card-header card-header-custom">
+                    <i class="fas fa-bolt me-2"></i>Быстрые действия
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'admin:store_product_add' %}" class="btn btn-outline-light"><i class="fas fa-plus-circle me-2"></i>Добавить товар</a>
+                        <a href="{% url 'admin:store_category_add' %}" class="btn btn-outline-light"><i class="fas fa-folder-plus me-2"></i>Добавить категорию</a>
+                        <a href="{% url 'admin:store_news_add' %}" class="btn btn-outline-light"><i class="fas fa-feather-alt me-2"></i>Написать новость</a>
+                        <a href="{% url 'admin:auth_user_add' %}" class="btn btn-outline-light"><i class="fas fa-user-plus me-2"></i>Создать пользователя</a>
+                        <a href="{% url 'admin:store_order_changelist' %}?status__exact=Оформлен" class="btn btn-outline-light"><i class="fas fa-truck me-2"></i>Необработанные заказы</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if app_list %}
+        <div class="mt-5">
+            <h3><i class="fas fa-cubes me-2"></i>Управление записями</h3>
+            <div class="row g-4 mt-1">
+                {% for app in app_list %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card bg-dark text-light border-secondary h-100">
+                            <div class="card-header">{{ app.name }}</div>
+                            <div class="card-body p-0">
+                                <table class="table table-dark table-hover mb-0">
+                                    {% for model in app.models %}
+                                        <tr>
+                                            <td>
+                                                {% if model.admin_url %}
+                                                    <a href="{{ model.admin_url }}" class="text-light">{{ model.name }}</a>
+                                                {% else %}
+                                                    {{ model.name }}
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                {% if model.add_url %}
+                                                    <a href="{{ model.add_url }}" class="btn btn-xs btn-outline-light me-1"><i class="fas fa-plus"></i></a>
+                                                {% endif %}
+                                                {% if model.admin_url %}
+                                                    <a href="{{ model.admin_url }}" class="btn btn-xs btn-outline-light"><i class="fas fa-edit"></i></a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

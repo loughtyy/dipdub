@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-5">
+        <div class="col-lg-8">
+            <h1 class="h2 text-uppercase mb-3">Новости</h1>
+            <div class="header-bottom-border"></div>
+            <p class="text-muted mt-3">Следите за последними новостями и событиями нашего ювелирного магазина</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mb-5 mb-lg-0">
+            {% if news %}
+                {% for item in news %}
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="row no-gutters">
+                        {% if item.image %}
+                        <div class="col-md-4">
+                            <img src="{{ item.image.url }}" class="card-img h-100" alt="{{ item.title }}" style="object-fit: cover;">
+                        </div>
+                        {% endif %}
+                        <div class="{% if item.image %}col-md-8{% else %}col-12{% endif %}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar-alt mr-1"></i>
+                                        {{ item.created_at|date:"d.m.Y" }}
+                                    </small>
+                                    <small class="text-primary">
+                                        <i class="fas fa-eye mr-1"></i>
+                                        {{ item.views }} просмотров
+                                    </small>
+                                </div>
+                                <h5 class="card-title">
+                                    <a href="{% url 'store:news_detail' item.slug %}" class="text-dark">
+                                        {{ item.title }}
+                                    </a>
+                                </h5>
+                                <p class="card-text text-muted">{{ item.short_description }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user mr-1"></i>
+                                        {{ item.author.first_name }} {{item.author.last_name}}
+                                    </small>
+                                    <a href="{% url 'store:news_detail' item.slug %}" class="btn btn-sm btn-outline-primary">
+                                        Читать далее
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if page_obj.paginator.num_pages > 1 %}
+                <nav aria-label="Навигация по страницам">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-newspaper fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">Новостей пока нет</h4>
+                    <p class="text-muted">Следите за обновлениями, скоро здесь появятся новости!</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            {% if recent_news %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0 text-uppercase">
+                        <i class="fas fa-history text-primary mr-2"></i>Последние новости
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for item in recent_news %}
+                        <a href="{% url 'store:news_detail' item.slug %}" class="list-group-item list-group-item-action border-0 py-3">
+                            <div class="d-flex align-items-center">
+                                {% if item.image %}
+                                <div class="mr-3">
+                                    <img src="{{ item.image.url }}" alt="{{ item.title }}" width="60" height="60" style="object-fit: cover;">
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-1">{{ item.title|truncatechars:50 }}</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar-alt mr-1"></i>
+                                        {{ item.created_at|date:"d.m.Y" }}
+                                    </small>
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0 text-uppercase">
+                        <i class="fas fa-archive text-primary mr-2"></i>Архив новостей
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% regroup news by created_at.year as year_list %}
+                    <div class="list-group list-group-flush">
+                        {% for year in year_list %}
+                        <div class="list-group-item border-0 px-0 py-2">
+                            <a href="#month{{ year.grouper }}" data-toggle="collapse" class="d-flex justify-content-between align-items-center">
+                                <strong>{{ year.grouper }} год</strong>
+                                <i class="fas fa-chevron-down"></i>
+                            </a>
+                            <div class="collapse mt-2" id="month{{ year.grouper }}">
+                                {% regroup year.list by created_at.month as month_list %}
+                                {% for month in month_list %}
+                                <a href="?year={{ year.grouper }}&month={{ month.grouper }}" class="d-block py-1 text-muted">
+                                    <i class="fas fa-angle-right mr-2"></i>
+                                    {{ month.list.0.created_at|date:"F" }} ({{ month.list|length }})
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

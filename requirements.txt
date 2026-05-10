@@ -1,0 +1,7 @@
+asgiref
+Django
+Pillow
+pytz
+sqlparse
+transformers
+torch

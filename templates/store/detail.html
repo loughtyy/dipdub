@@ -1,0 +1,407 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<section class="py-5">
+  <div class="container">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">&times;</button>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="row mb-5">
+      <div class="col-lg-6">
+        <div class="owl-carousel product-slider" data-slider-id="1">
+          {% if product.product_image %}
+            <a class="d-block" href="{{ product.product_image.url }}" data-lightbox="product" title="{{ product.title }}">
+              <img class="img-fluid" src="{{ product.product_image.url }}" alt="{{ product.title }}">
+            </a>
+          {% else %}
+            <a class="d-block" href="{% static 'img/product-detail-1.jpg' %}" data-lightbox="product" title="{{ product.title }}">
+              <img class="img-fluid" src="{% static 'img/product-detail-1.jpg' %}" alt="{{ product.title }}">
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        {% if product.is_featured %}
+          <span class="badge badge-warning text-dark mb-2"><i class="fas fa-star"></i> Рекомендуемый товар</span>
+        {% endif %}
+        <h1>{{ product.title }}</h1>
+        <p class="text-muted lead">{{ product.price|intcomma }} ₽</p>
+
+        {% if avg_rating %}
+          <div class="mb-2">
+            <span class="text-warning">
+              {% for i in "12345"|make_list %}
+                {% if forloop.counter <= avg_rating|floatformat:"0"|add:"0" %}
+                  <i class="fas fa-star"></i>
+                {% elif forloop.counter <= avg_rating|add:"0.5" %}
+                  <i class="fas fa-star-half-alt"></i>
+                {% else %}
+                  <i class="far fa-star"></i>
+                {% endif %}
+              {% endfor %}
+            </span>
+            <span class="text-muted small ml-2">{{ avg_rating|floatformat:1 }} ({{ reviews|length }})</span>
+          </div>
+        {% endif %}
+
+        <p class="text-small mb-4">{{ product.short_description }}</p>
+
+        <div class="mb-4">
+          <form action="{% url 'store:add-to-cart' %}" method="get">
+            <input type="hidden" name="prod_id" value="{{ product.id }}">
+            <input type="hidden" name="quantity" value="1">
+            <button type="submit" class="btn btn-dark btn-sm btn-block">
+              <i class="fas fa-shopping-cart mr-2"></i> Добавить в корзину
+            </button>
+          </form>
+        </div>
+
+        <button type="button" class="btn btn-outline-dark btn-sm btn-block wishlist-toggle mb-3" data-product-id="{{ product.id }}">
+          <i class="{% if is_in_wishlist %}fas fa-heart{% else %}far fa-heart{% endif %} mr-2"></i>
+          {% if is_in_wishlist %}В избранном{% else %}В избранное{% endif %}
+        </button>
+
+        <ul class="list-unstyled small d-inline-block">
+          <li class="px-3 py-2 mb-1 bg-white"><strong class="text-uppercase">Модель:</strong> <span class="ml-2 text-muted">{{ product.sku }}</span></li>
+          <li class="px-3 py-2 mb-1 bg-white"><strong class="text-uppercase">Категория:</strong> <a class="ml-2 text-muted" href="{% url 'store:category-products' product.category.slug %}">{{ product.category }}</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <ul class="nav nav-tabs border-0" id="myTab" role="tablist">
+      <li class="nav-item"><a class="nav-link active" id="description-tab" data-toggle="tab" href="#description" role="tab">Описание</a></li>
+      <li class="nav-item">
+        <a class="nav-link d-flex align-items-center" id="reviews-tab" data-toggle="tab" href="#reviews" role="tab">
+          Отзывы <span class="badge bg-primary text-light ml-1">{{ reviews|length }}</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="tab-content mb-5" id="myTabContent">
+      <div class="tab-pane fade show active" id="description" role="tabpanel">
+        <div class="p-4 p-lg-5 bg-white">
+          <h6 class="text-uppercase">Описание товара</h6>
+          <p class="text-muted text-small mb-0">{{ product.detail_description|default:"Описание отсутствует"|linebreaksbr }}</p>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="reviews" role="tabpanel">
+        <div class="p-4 p-lg-5 bg-white">
+          {% if reviews %}
+            {% for review in reviews %}
+              <div class="media mb-4 p-3 border rounded" id="review-{{ review.id }}">
+                <div class="mr-3">
+                  <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                    <i class="fas fa-user text-muted"></i>
+                  </div>
+                </div>
+                <div class="media-body">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                      <h6 class="mb-0">{{ review.user.first_name }} {{ review.user.last_name }}</h6>
+                      <div class="rating-stars mb-1" data-rating="{{ review.rating }}">
+                        {% for star in "12345"|make_list %}
+                          {% if forloop.counter <= review.rating %}
+                            <i class="fas fa-star text-warning small"></i>
+                          {% else %}
+                            <i class="far fa-star text-warning small"></i>
+                          {% endif %}
+                        {% endfor %}
+                      </div>
+                      <small class="text-muted">
+                        <i class="far fa-clock"></i> {{ review.created_at|date:"d.m.Y H:i" }}
+                        {% if review.is_edited %}
+                          <span class="badge badge-light edited-badge ml-2">
+                            <i class="fas fa-pencil-alt"></i> изменено {{ review.updated_at|date:"d.m.Y H:i" }}
+                          </span>
+                        {% endif %}
+                      </small>
+                    </div>
+                    {% if user == review.user or user.is_staff %}
+                    <div>
+                      <button type="button" class="btn btn-sm btn-outline-secondary edit-review-btn" data-review-id="{{ review.id }}">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-danger delete-review" data-review-id="{{ review.id }}" data-toggle="modal" data-target="#deleteReviewModal">
+                        <i class="fas fa-trash-alt"></i>
+                      </button>
+                    </div>
+                    {% endif %}
+                  </div>
+
+                  <div class="sentiment-badge">
+                    {% if review.sentiment_analyzed %}
+                      <div class="mb-2">
+                        {% if review.sentiment_label == 'POSITIVE' %}
+                          <span class="badge bg-success text-white px-3 py-1"><i class="fas fa-smile-wink"></i> Положительный отзыв</span>
+                        {% elif review.sentiment_label == 'NEGATIVE' %}
+                          <span class="badge bg-danger text-white px-3 py-1"><i class="fas fa-frown"></i> Негативный отзыв</span>
+                        {% else %}
+                          <span class="badge bg-secondary text-white px-3 py-1"><i class="fas fa-meh"></i> Нейтральный отзыв</span>
+                        {% endif %}
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <p class="mb-0 review-text">{{ review.comment|linebreaksbr }}</p>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="text-muted text-center py-4">Пока нет отзывов. Будьте первым!</p>
+          {% endif %}
+
+          <div class="mt-5 pt-3 border-top">
+            {% if user.is_authenticated %}
+              {% if can_review %}
+                <h5 class="h5 mb-3">Оставить отзыв</h5>
+                <form method="post" id="add-review-form">
+                  {% csrf_token %}
+                  <div class="form-group row">
+                    <label class="col-md-2 col-form-label">{{ review_form.rating.label }}</label>
+                    <div class="col-md-5">{{ review_form.rating }}</div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-md-2 col-form-label">{{ review_form.comment.label }}</label>
+                    <div class="col-md-10">{{ review_form.comment }}</div>
+                  </div>
+                  <div class="form-group row">
+                    <div class="offset-md-2 col-md-10">
+                      <button type="submit" class="btn btn-primary">Отправить отзыв</button>
+                    </div>
+                  </div>
+                </form>
+              {% else %}
+                <div class="alert alert-secondary text-center">Вы уже оставили отзыв на этот товар. Спасибо!</div>
+              {% endif %}
+            {% else %}
+              <div class="alert alert-warning text-center">
+                <a href="{% url 'store:login' %}">Войдите</a>, чтобы оставить отзыв.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="h5 text-uppercase mb-4">Связанные товары</h2>
+    <div class="row">
+      {% for rp in related_products %}
+        <div class="col-lg-3 col-sm-6 mb-4">
+          <div class="product text-center">
+            <div class="d-block mb-3 position-relative">
+              <a href="{% url 'store:product-detail' rp.slug %}">
+                <img class="img-fluid w-100" src="{% if rp.product_image %}{{ rp.product_image.url }}{% else %}{% static 'img/product-1.jpg' %}{% endif %}" alt="{{ rp.title }}" style="height: 200px; object-fit: cover;">
+              </a>
+              <div class="product-overlay">
+                <ul class="mb-0 list-inline">
+                  <li class="list-inline-item m-0 p-0">
+                    {% if user.is_authenticated %}
+                      <button class="btn btn-sm btn-outline-dark wishlist-toggle-ajax" data-product-id="{{ rp.id }}">
+                        <i class="{% if rp.id in user_wishlist_ids %}fas fa-heart{% else %}far fa-heart{% endif %}"></i>
+                      </button>
+                    {% else %}
+                      <a href="{% url 'store:login' %}" class="btn btn-sm btn-outline-dark"><i class="far fa-heart"></i></a>
+                    {% endif %}
+                  </li>
+                  <li class="list-inline-item m-0 p-0">
+                    <form action="{% url 'store:add-to-cart' %}">
+                      <input type="hidden" name="prod_id" value="{{ rp.id }}">
+                      <button type="submit" class="btn btn-sm btn-dark">Добавить корзину</button>
+                    </form>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <h6><a class="reset-anchor" href="{% url 'store:product-detail' rp.slug %}">{{ rp.title|truncatechars:30 }}</a></h6>
+            <p class="small text-muted">{{ rp.price|intcomma }} ₽</p>
+          </div>
+        </div>
+      {% empty %}
+        <div class="col-12 text-center py-4">Нет связанных товаров.</div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<div class="modal fade" id="deleteReviewModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header"><h5>Подтверждение удаления</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+      <div class="modal-body">Вы уверены, что хотите удалить этот отзыв?</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-dark" data-dismiss="modal">Отмена</button>
+        <a href="#" id="confirmDeleteReviewBtn" class="btn btn-primary">Удалить</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="editReviewModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <form id="edit-review-form">
+        {% csrf_token %}
+        <div class="modal-header"><h5>Редактирование отзыва</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Оценка</label>
+            <select id="edit-review-rating" class="form-control">
+              <option value="5">Отлично</option><option value="4">Хорошо</option>
+              <option value="3">Средне</option><option value="2">Плохо</option><option value="1">Ужасно</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Комментарий</label>
+            <textarea id="edit-review-content" class="form-control" rows="4" required></textarea>
+          </div>
+          <div id="edit-review-error" class="alert alert-danger d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-dark" data-dismiss="modal">Отмена</button>
+          <button type="submit" class="btn btn-primary">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+  $('.wishlist-toggle').click(function(e) {
+    e.preventDefault();
+    var $btn = $(this);
+    var productId = $btn.data('product-id');
+    $.ajax({
+      url: "{% url 'store:toggle_wishlist' %}",
+      type: "POST",
+      data: { 'product_id': productId, 'csrfmiddlewaretoken': '{{ csrf_token }}' },
+      success: function(data) { if (data.status === 'ok') location.reload(); else alert(data.message); },
+      error: function() { alert('Ошибка'); }
+    });
+  });
+
+  $('.wishlist-toggle-ajax').click(function(e) {
+    e.preventDefault();
+    var $btn = $(this);
+    var productId = $btn.data('product-id');
+    var $icon = $btn.find('i');
+    $.ajax({
+      url: "{% url 'store:toggle_wishlist' %}",
+      type: "POST",
+      data: { 'product_id': productId, 'csrfmiddlewaretoken': '{{ csrf_token }}' },
+      success: function(data) {
+        if (data.status === 'ok') {
+          if (data.is_in_wishlist) $icon.removeClass('far').addClass('fas');
+          else $icon.removeClass('fas').addClass('far');
+          $('.wishlist-count').text(data.wishlist_count);
+        }
+      }
+    });
+  });
+
+  $('.delete-review').click(function() {
+    var reviewId = $(this).data('review-id');
+    $('#confirmDeleteReviewBtn').attr('href', "{% url 'store:delete_review' 0 %}".replace('0', reviewId));
+  });
+
+  var currentReviewId = null;
+  $('.edit-review-btn').click(function() {
+    currentReviewId = $(this).data('review-id');
+    var $reviewDiv = $(this).closest('.media');
+    var currentRating = $reviewDiv.find('.rating-stars').data('rating');
+    var currentText = $reviewDiv.find('.review-text').text().trim();
+    $('#edit-review-rating').val(currentRating);
+    $('#edit-review-content').val(currentText);
+    $('#edit-review-error').addClass('d-none');
+    $('#editReviewModal').modal('show');
+  });
+
+  $('#edit-review-form').submit(function(e) {
+    e.preventDefault();
+    $.ajax({
+        url: "{% url 'store:edit_review' 0 %}".replace('0', currentReviewId),
+        type: "POST",
+        data: {
+            'rating': $('#edit-review-rating').val(),
+            'comment': $('#edit-review-content').val(),
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(data) {
+            if (data.status === 'ok') {
+                var $reviewDiv = $('.edit-review-btn[data-review-id="' + currentReviewId + '"]').closest('.media');
+                
+                $reviewDiv.find('.review-text').text(data.content);
+                
+                $reviewDiv.find('.rating-stars').html(data.rating_stars).data('rating', data.rating);
+                
+                var $editedSpan = $reviewDiv.find('.edited-badge');
+                if ($editedSpan.length) {
+                    $editedSpan.html('<i class="fas fa-pencil-alt"></i> изменено ' + data.updated_at);
+                } else {
+                    $reviewDiv.find('.text-muted small').append(' <span class="badge badge-light edited-badge"><i class="fas fa-pencil-alt"></i> изменено ' + data.updated_at + '</span>');
+                }
+                
+                var $sentimentContainer = $reviewDiv.find('.sentiment-badge');
+                if (data.sentiment_analyzed && data.sentiment_label) {
+                    var sentimentText = '';
+                    var sentimentClass = '';
+                    var sentimentIcon = '';
+                    
+                    if (data.sentiment_label === 'POSITIVE') {
+                        sentimentText = 'Положительный отзыв';
+                        sentimentClass = 'bg-success';
+                        sentimentIcon = 'fa-smile-wink';
+                    } else if (data.sentiment_label === 'NEGATIVE') {
+                        sentimentText = 'Негативный отзыв';
+                        sentimentClass = 'bg-danger';
+                        sentimentIcon = 'fa-frown';
+                    } else {
+                        sentimentText = 'Нейтральный отзыв';
+                        sentimentClass = 'bg-secondary';
+                        sentimentIcon = 'fa-meh';
+                    }
+                    
+                    var sentimentHtml = '<div class="mb-2"><span class="badge ' + sentimentClass + ' text-white px-3 py-1"><i class="fas ' + sentimentIcon + '"></i> ' + sentimentText + '</span></div>';
+                    
+                    if ($sentimentContainer.length) {
+                        $sentimentContainer.html(sentimentHtml);
+                    } else {
+                        $reviewDiv.find('.rating-stars').after('<div class="sentiment-badge">' + sentimentHtml + '</div>');
+                    }
+                } else {
+                    if ($sentimentContainer.length) {
+                        $sentimentContainer.empty();
+                    }
+                }
+                
+                $('#editReviewModal').modal('hide');
+            } else {
+                $('#edit-review-error').text(data.message || 'Ошибка').removeClass('d-none');
+            }
+        },
+        error: function(xhr) {
+            console.error(xhr.responseText);
+            var msg = 'Ошибка при сохранении';
+            try {
+                var response = JSON.parse(xhr.responseText);
+                msg = response.message || msg;
+            } catch(e) {}
+            $('#edit-review-error').text(msg).removeClass('d-none');
+        }
+    });
+  });
+});
+</script>
+{% endblock %}
