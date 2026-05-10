@@ -6,3 +6,4 @@ sqlparse
 transformers
 torch
 gunicorn
+whitenoise[brotli]
