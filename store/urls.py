@@ -50,5 +50,5 @@ urlpatterns = [
 ]
 
 urlpatterns += [
-    path('media/<path:path>', RedirectView.as_view(url='/static/media/%(path)s'), name='media_redirect'),
+    path('media/<path:path>', RedirectView.as_view(url='/static/%(path)s'), name='media_redirect'),
 ]
