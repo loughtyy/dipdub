@@ -1,3 +1,4 @@
+import threading
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -61,19 +62,33 @@ class NewsComment(models.Model):
     def __str__(self):
         return f'Комментарий от {self.user.username} к новости "{self.news.title[:30]}"'
 
-    def save(self, *args, **kwargs):
+        def save(self, *args, **kwargs):
         print(f"SAVE called for {self.__class__.__name__}, analyzed={self.sentiment_analyzed}")
-    
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
         if self.content and not self.sentiment_analyzed:
-            print("Running sentiment analysis...")
+            threading.Thread(target=self._analyze_sentiment, args=(is_new,), daemon=True).start()
+
+    def _analyze_sentiment(self, is_new):
+        from django.db import connection
+        connection.close()
+        try:
             from store.sentiment_service import analyze_sentiment
             label, score = analyze_sentiment(self.content)
-            print(f"Result: {label}, {score}")
             if label != 'error':
-                self.sentiment_label = label.upper()
-                self.sentiment_score = score
-                self.sentiment_analyzed = True
-        super().save(*args, **kwargs)
+                NewsComment.objects.filter(pk=self.pk).update(
+                    sentiment_label=label.upper(),
+                    sentiment_score=score,
+                    sentiment_analyzed=True
+                )
+                print(f"Sentiment updated for {self.__class__.__name__} id={self.pk}: {label}")
+            else:
+                print(f"Sentiment analysis error for {self.pk}")
+        except Exception as e:
+            print(f"Sentiment analysis failed for {self.pk}: {e}")
+
+    def __str__(self):
+        return f'Комментарий от {self.user.username} к новости "{self.news.title[:30]}"'
 
 class Category(models.Model):
     title = models.CharField(max_length=50, verbose_name="Название категории")
@@ -148,17 +163,32 @@ class ProductReview(models.Model):
     
     def save(self, *args, **kwargs):
         print(f"SAVE called for {self.__class__.__name__}, analyzed={self.sentiment_analyzed}")
-    
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
         if self.comment and not self.sentiment_analyzed:
-            print("Running sentiment analysis...")
+            threading.Thread(target=self._analyze_sentiment, args=(is_new,), daemon=True).start()
+
+    def _analyze_sentiment(self, is_new):
+        from django.db import connection
+        connection.close()
+        try:
             from store.sentiment_service import analyze_sentiment
             label, score = analyze_sentiment(self.comment)
-            print(f"Result: {label}, {score}")
             if label != 'error':
-                self.sentiment_label = label.upper()
-                self.sentiment_score = score
-                self.sentiment_analyzed = True
-        super().save(*args, **kwargs)
+                ProductReview.objects.filter(pk=self.pk).update(
+                    sentiment_label=label.upper(),
+                    sentiment_score=score,
+                    sentiment_analyzed=True
+                )
+                print(f"Sentiment updated for {self.__class__.__name__} id={self.pk}: {label}")
+            else:
+                print(f"Sentiment analysis error for {self.pk}")
+        except Exception as e:
+            print(f"Sentiment analysis failed for {self.pk}: {e}")
+
+    def __str__(self):
+        stars = '★' * int(self.rating) + '☆' * (5 - int(self.rating))
+        return f'{self.user} на {self.product}: {stars}'
         
 
 class Cart(models.Model):
