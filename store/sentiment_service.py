@@ -12,7 +12,7 @@ def get_sentiment_pipeline():
                 "text-classification",
                 model="seara/rubert-tiny2-russian-sentiment",
                 tokenizer="seara/rubert-tiny2-russian-sentiment",
-                device= 0
+                device=-1
             )
             logger.info("Анализатор тональности успешно загружен.")
         except Exception:
