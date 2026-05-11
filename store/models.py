@@ -63,11 +63,11 @@ class NewsComment(models.Model):
         return f'Комментарий от {self.user.username} к новости "{self.news.title[:30]}"'
 
         def save(self, *args, **kwargs):
-        print(f"SAVE called for {self.__class__.__name__}, analyzed={self.sentiment_analyzed}")
-        is_new = self.pk is None
-        super().save(*args, **kwargs)
-        if self.content and not self.sentiment_analyzed:
-            threading.Thread(target=self._analyze_sentiment, args=(is_new,), daemon=True).start()
+            print(f"SAVE called for {self.__class__.__name__}, analyzed={self.sentiment_analyzed}")
+            is_new = self.pk is None
+            super().save(*args, **kwargs)
+            if self.content and not self.sentiment_analyzed:
+                threading.Thread(target=self._analyze_sentiment, args=(is_new,), daemon=True).start()
 
     def _analyze_sentiment(self, is_new):
         from django.db import connection
