@@ -73,7 +73,7 @@ class NewsComment(models.Model):
         from django.db import connection
         connection.close()
         try:
-            from store.sentiment_service import analyze_sentiment
+            from store.sentiment_api import analyze_sentiment
             label, score = analyze_sentiment(self.content)
             if label != 'error':
                 NewsComment.objects.filter(pk=self.pk).update(
@@ -172,7 +172,7 @@ class ProductReview(models.Model):
         from django.db import connection
         connection.close()
         try:
-            from store.sentiment_service import analyze_sentiment
+            from store.sentiment_api import analyze_sentiment
             label, score = analyze_sentiment(self.comment)
             if label != 'error':
                 ProductReview.objects.filter(pk=self.pk).update(

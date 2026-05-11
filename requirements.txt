@@ -3,7 +3,7 @@ Django
 Pillow
 pytz
 sqlparse
-transformers
-torch
 gunicorn
 whitenoise[brotli]
+requests
+huggingface_hub[hf_xet]
