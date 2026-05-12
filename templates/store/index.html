@@ -69,17 +69,27 @@
                       <div class="product-overlay">
                         <ul class="mb-0 list-inline">
                           <li class="list-inline-item m-0 p-0">
-                            <button class="btn btn-sm btn-outline-dark wishlist-toggle" data-product-id="{{ product.id }}">
-                                <i class="{% if product.id in user_wishlist_ids %}fas fa-heart{% else %}far fa-heart{% endif %}"></i>
-                            </button>
+                            {% if user.is_authenticated %}
+                              <button class="btn btn-sm btn-outline-dark wishlist-toggle" data-product-id="{{ product.id }}">
+                                  <i class="{% if product.id in user_wishlist_ids %}fas fa-heart{% else %}far fa-heart{% endif %}"></i>
+                              </button>
+                            {% else %}
+                              <a href="{% url 'store:login' %}" class="btn btn-sm btn-outline-dark">
+                                  <i class="far fa-heart"></i>
+                              </a>
+                            {% endif %}
                           </li>
                           <li class="list-inline-item m-0 p-0">
                             {% comment %} <a class="btn btn-sm btn-dark" href="{% url 'store:add-to-cart' %}">Добавить в корзину</a> {% endcomment %}
 
-                            <form action="{% url 'store:add-to-cart' %}">
-                              <input type="hidden" name="prod_id" value="{{product.id}}" id="product_id">
-                              <button type="submit" class="btn btn-sm btn-dark">Добавить в корзину</button>
-                            </form>
+                            {% if product.stock > 0 %}
+                              <form action="{% url 'store:add-to-cart' %}">
+                                <input type="hidden" name="prod_id" value="{{ product.id }}">
+                                <button type="submit" class="btn btn-sm btn-dark">Добавить в корзину</button>
+                              </form>
+                            {% else %}
+                              <button class="btn btn-sm btn-secondary" disabled>Нет в наличии</button>
+                            {% endif %}
 
                           </li>
                         </ul>
@@ -146,4 +156,48 @@
         </section>
       </div>
 
-      {% endblock content %}
+
+
+      {% block extra_js %}
+        <script>
+        $(document).ready(function() {
+            $('.wishlist-toggle').off('click').on('click', function(e) {
+                e.preventDefault();
+                var $btn = $(this);
+                if ($btn.data('processing')) return;
+                $btn.data('processing', true);
+                var productId = $btn.data('product-id');
+                var $icon = $btn.find('i');
+                $.ajax({
+                    url: "{% url 'store:toggle_wishlist' %}",
+                    type: "POST",
+                    data: {
+                        'product_id': productId,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function(data) {
+                        if (data.status === 'ok') {
+                            if (data.is_in_wishlist) {
+                                $icon.removeClass('far').addClass('fas');
+                            } else {
+                                $icon.removeClass('fas').addClass('far');
+                            }
+                            $('.wishlist-count').text(data.wishlist_count);
+                        } else {
+                            alert(data.message);
+                        }
+                    },
+                    error: function() {
+                        alert('Ошибка');
+                    },
+                    complete: function() {
+                        $btn.data('processing', false);
+                    }
+                });
+            });
+        });
+        </script>
+        {% endblock %}
+      
+
+{% endblock content %}

@@ -30,7 +30,7 @@
               <ul class="navbar-nav ml-auto"> 
                 {% if request.user.is_authenticated %}           
                   <li class="nav-item"><a class="nav-link" href="{% url 'store:cart' %}"> <i class="fas fa-dolly-flatbed mr-1 text-gray"></i>Корзина<small class="text-gray">({{cart_items.count}})</small></a></li>
-                  <li class="nav-item"><a class="nav-link" href="{% url 'store:wishlist' %}"> <i class="far fa-heart mr-1 text-gray"></i>Избранное<small class="text-gray">({{ wishlist_count }})</small></a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'store:wishlist' %}"> <i class="far fa-heart mr-1 text-gray"></i>Избранное<small class="text-gray">(<span class="wishlist-count">{{ wishlist_count }}</span>)</small></a></li>
                   {% comment %} <li class="nav-item"><a class="nav-link" href="#"> <i class="fas fa-user-alt mr-1 text-gray"></i>Профиль</a></li> {% endcomment %}
 
                   <li class="nav-item dropdown"><a class="nav-link dropdown-toggle" id="pagesDropdown" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fas fa-user-alt mr-1 text-gray"></i>Профиль</a></a>

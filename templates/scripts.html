@@ -51,52 +51,7 @@
             }
         }
         injectSvgSprite('https://bootstraptemple.com/files/icons/orion-svg-sprite.svg'); 
-        
       </script>
-
-      <script>
-        $(document).ready(function() {
-            $('.wishlist-toggle').click(function(e) {
-                e.preventDefault();
-                var $btn = $(this);
-                var productId = $btn.data('product-id');
-                $.ajax({
-                    url: "{% url 'store:toggle_wishlist' %}",
-                    type: "POST",
-                    data: {
-                        'product_id': productId,
-                        'csrfmiddlewaretoken': '{{ csrf_token }}'
-                    },
-                    success: function(data) {
-                        if (data.status === 'ok') {
-                            var $icon = $btn.find('i');
-                            if (data.is_in_wishlist) {
-                                if ($icon.length) {
-                                    $icon.removeClass('far').addClass('fas');
-                                }
-                                if ($btn.text().includes('В избранное')) {
-                                    $btn.html('<i class="fas fa-heart mr-2"></i>В избранном');
-                                }
-                            } else {
-                                if ($icon.length) {
-                                    $icon.removeClass('fas').addClass('far');
-                                }
-                                if ($btn.text().includes('В избранном')) {
-                                    $btn.html('<i class="far fa-heart mr-2"></i>В избранное');
-                                }
-                            }
-                            $('.wishlist-count').text(data.wishlist_count);
-                        } else {
-                            alert(data.message);
-                        }
-                    },
-                    error: function() {
-                        alert('Ошибка при добавлении в избранное. Попробуйте позже.');
-                    }
-                });
-            });
-        });
-        </script>
 
       <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
     </div>

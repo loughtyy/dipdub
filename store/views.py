@@ -370,7 +370,7 @@ def cart(request):
     shipping_amount = decimal.Decimal(0)  
     total_amount = amount                  
 
-    addresses = Address.objects.filter(user=user)
+    addresses = Address.objects.filter(user=user).exclude(locality='Самовывоз')
 
     context = {
         'cart_products': cart_products,
@@ -453,13 +453,15 @@ def toggle_wishlist(request):
         product_id = request.POST.get('product_id')
         try:
             product = Product.objects.get(id=product_id)
-            wish_item = Wishlist.objects.filter(user=request.user, product=product)
-            if wish_item.exists():
-                wish_item.delete()
+            wishlist_item, created = Wishlist.objects.get_or_create(
+                user=request.user,
+                product=product
+            )
+            if not created:
+                wishlist_item.delete()
                 is_in_wishlist = False
                 message = "Товар удалён из избранного"
             else:
-                Wishlist.objects.create(user=request.user, product=product)
                 is_in_wishlist = True
                 message = "Товар добавлен в избранное"
             wishlist_count = Wishlist.objects.filter(user=request.user).count()
@@ -514,18 +516,38 @@ def checkout(request):
         messages.warning(request, "Ваша корзина пуста.")
         return redirect('store:cart')
 
+    errors = []
     for cart_item in cart:
+        if cart_item.quantity > cart_item.product.stock:
+            errors.append({
+                'title': cart_item.product.title,
+                'requested': cart_item.quantity,
+                'available': cart_item.product.stock
+            })
+    if errors:
+        for err in errors:
+            messages.error(
+                request,
+                f'Товара "{err["title"]}" недостаточно на складе. '
+                f'Доступно: {err["available"]} шт., запрошено: {err["requested"]} шт.'
+            )
+        return redirect('store:cart')
+
+    for cart_item in cart:
+        product = cart_item.product
+        product.stock -= cart_item.quantity
+        product.save()
+
         Order.objects.create(
             user=user,
             address=address,
             product=cart_item.product,
             quantity=cart_item.quantity
         )
-    cart.delete()  
+    cart.delete()
 
     messages.success(request, "Заказ успешно оформлен!")
     return redirect('store:orders')
-
 
 @login_required
 def orders(request):
