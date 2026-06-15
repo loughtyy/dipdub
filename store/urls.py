@@ -49,6 +49,6 @@ urlpatterns = [
     path('accounts/password-reset-complete/', auth_views.PasswordResetCompleteView.as_view(template_name='account/password_reset_complete.html'), name="password_reset_complete"),
 ]
 
-urlpatterns += [
-    path('media/<path:path>', RedirectView.as_view(url='/static/%(path)s'), name='media_redirect'),
-]
+#urlpatterns += [
+#    path('media/<path:path>', RedirectView.as_view(url='/static/%(path)s'), name='media_redirect'),
+#]
